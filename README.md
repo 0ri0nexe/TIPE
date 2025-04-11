@@ -8,11 +8,12 @@ The use of this repo might change in the future, for now its goal is to extract 
 
 ## Method
 
-To do so we need to :
-
-- execute the program and extract all the instruction it goes through. This is done by executing the program step by step like we would do with a debugger and collecting the successive adresses the RIP register takes.
+To do so we need to execute the program and extract all the instruction it goes through. This is done by executing the program step by step and in a step :
+-  Collect the successive adresses taken by the RIP register (instruction pointer register)
   
-- Detect conditional jumps adresses. We need to find paterns in the assembly which are related to conditionnal jumps. It will be hard to be hexaustive, but the goal is to miss as few conditions as possible.
+- Disassemble the first instruction in memory at this adress
+
+We have a list of adresses and instruction, then we need to detect conditional jumps, to do so, we search for a "cmp" condition, followed by a jump instruction (je, jz, jg, ...)
 
 ## Dependencies
 
@@ -25,3 +26,7 @@ First versions will be oriented on functionality, and may not be stable or beaut
 ## TODO
 
 Pretty much everything except the step by step thing
+
+## Journal de bord :
+
+--> 11/04/2024 : problème des traces de programmes résoluts : 
