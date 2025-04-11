@@ -1,0 +1,8 @@
+.vscode
+
+# Compiling files
+bin
+
+# Personnal
+tests
+logs
