@@ -29,4 +29,6 @@ Pretty much everything except the step by step thing
 
 ## Journal de bord :
 
---> 11/04/2024 : problème des traces de programmes résoluts : 
+--> 11/04/2025 : program trace of programs done.
+
+--> 18/04/2025 : refactoring code (now beautiful)
