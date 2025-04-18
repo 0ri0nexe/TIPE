@@ -1,10 +1,10 @@
-#define _GNU_SOURCE
+#define  _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/ptrace.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <sys/user.h>   // Pour struct user_regs_struct
+#include <sys/user.h>   // For struct user_regs_struct
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
@@ -27,7 +27,7 @@ pid_t give_birth(char* name) {
     if (child == 0) {
         // Enfant : demande à être tracé
         ptrace(PTRACE_TRACEME, 0, NULL, NULL);
-        kill(getpid(), SIGSTOP);  // Laisser le parent se préparer
+        kill(getpid(), SIGSTOP);  // Wait for the upsrteam process
         execvp(name, &name);
         error_exit("execvp"); // Ne devrait pas arriver
     }
@@ -61,29 +61,30 @@ void readm(pid_t child, struct user_regs_struct* regs, uint8_t* code) {
 }
 
 void handle_insn(bool* cmp, bool* jmp, uint64_t* jmp_adress, cs_insn* insn, struct user_regs_struct* regs) {
-    if (cmp) {
-        if (*cmp && *jmp) {
-            if (*jmp_adress == regs->rip) {
-                printf("0x%lx 1\n", insn[0].address);
-            } else {
-                printf("0x%lx 0\n", insn[0].address);
-            }
-            *cmp = false;
-            *jmp = false;
-        }
+    // if (cmp) {
+    //     printf("1\n");
+    //     if (*cmp && *jmp) {
+    //         if (*jmp_adress == regs->rip) {
+    //             printf("0x%lx 1\n", insn[0].address);
+    //         } else {
+    //             printf("0x%lx 0\n", insn[0].address);
+    //         }
+    //         *cmp = false;
+    //         *jmp = false;
+    //     }
 
-        if (strstr(insn->mnemonic, "j")) {
-            *jmp = true;
-            *jmp_adress = (uint64_t)strtol(insn->op_str, NULL, 0);
-        } else {
-            fprintf(stderr, "No jmp instruction after cmp");
-            *cmp = false;
-            *jmp = false;
-        } 
+    //     if (strstr(insn->mnemonic, "j")) {
+    //         *jmp = true;
+    //         *jmp_adress = (uint64_t)strtol(insn->op_str, NULL, 0);
+    //     } else {
+    //         fprintf(stderr, "No jmp instruction after cmp\n");
+    //         *cmp = false;
+    //         *jmp = false;
+    //     } 
         
-    } else if (strstr(insn->mnemonic, "cmp")) {
-        *cmp = true;
-    }
+    // } else if (strstr(insn->mnemonic, "cmp")) {
+    //     *cmp = true;
+    // }
 }
 
 int run_child(pid_t child) {
@@ -124,6 +125,10 @@ int run_child(pid_t child) {
         // TODO Handle asm sorting 
         if (count > 0) {
             handle_insn(&cmp, &jmp, &jmp_adress, insn, &regs);
+            printf("0x%lx:\t%s\t%s\n",
+                insn[0].address,
+                insn[0].mnemonic,
+                insn[0].op_str);
             cs_free(insn, count);
         } else {
             fprintf(stderr, "0x%llx:\t<unable to disassemble>\n", regs.rip);
