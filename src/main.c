@@ -25,17 +25,17 @@ pid_t give_birth(char* name) {
     }
 
     if (child == 0) {
-        // Enfant : demande à être tracé
+        // An error occurred forking the child
         ptrace(PTRACE_TRACEME, 0, NULL, NULL);
-        kill(getpid(), SIGSTOP);  // Wait for the upsrteam process
+        kill(getpid(), SIGSTOP); 
         execvp(name, &name);
-        error_exit("execvp"); // Ne devrait pas arriver
+        error_exit("execvp");
     }
     return child;
 }
 
 int execute(int steps, pid_t child, int* status) {
-    for (int i = 0; i < steps; i--) {
+    for (int i = 0; i < steps; i++) {
 
         if (ptrace(PTRACE_SINGLESTEP, child, 0, 0) == -1)
             error_exit("ptrace SINGLESTEP");
@@ -60,34 +60,26 @@ void readm(pid_t child, struct user_regs_struct* regs, uint8_t* code) {
     }
 }
 
-void handle_insn(bool* cmp, bool* jmp, uint64_t* jmp_adress, cs_insn* insn, struct user_regs_struct* regs) {
-    // if (cmp) {
-    //     printf("1\n");
-    //     if (*cmp && *jmp) {
-    //         if (*jmp_adress == regs->rip) {
-    //             printf("0x%lx 1\n", insn[0].address);
-    //         } else {
-    //             printf("0x%lx 0\n", insn[0].address);
-    //         }
-    //         *cmp = false;
-    //         *jmp = false;
-    //     }
+void handle_insn(bool* cmp, bool* jmp, uint64_t* jmp_adress, cs_insn* insn, struct user_regs_struct* regs, FILE* output_file, int* flag_setter_not_linked) {
+    if (strcmp(insn[0].mnemonic, "cmp") == 0 || strcmp(insn[0].mnemonic, "test") == 0) {
+        *cmp = true;
+    } else if (strstr(insn[0].mnemonic, "j")) {
+        *jmp = true;
+        *jmp_adress = strtoull(insn[0].op_str, NULL, 16);
+    } else if (*cmp && *jmp) {
+        fprintf(output_file, "0x%lx\t%d\n", *jmp_adress, *jmp_adress == regs->rip);
+        *jmp = false;
+        *jmp_adress = false;
+    } else if (cmp && !jmp) {
+        (*flag_setter_not_linked)++;
+    } else {
+        *jmp = false;
+        *cmp = false;
+    }
 
-    //     if (strstr(insn->mnemonic, "j")) {
-    //         *jmp = true;
-    //         *jmp_adress = (uint64_t)strtol(insn->op_str, NULL, 0);
-    //     } else {
-    //         fprintf(stderr, "No jmp instruction after cmp\n");
-    //         *cmp = false;
-    //         *jmp = false;
-    //     } 
-        
-    // } else if (strstr(insn->mnemonic, "cmp")) {
-    //     *cmp = true;
-    // }
 }
 
-int run_child(pid_t child) {
+int run_child(pid_t child, FILE* output_file, bool verbose) {
     
     int status;
     struct user_regs_struct regs; // Process parameters
@@ -110,6 +102,10 @@ int run_child(pid_t child) {
     bool cmp  = false;
     bool jmp  = false;
     uint64_t jmp_adress;
+
+    int flag_setter_not_liked = 0;
+    int undisassembled_lines = 0;
+    
     while (!stop) {
         // Collecting current process settings
         if (ptrace(PTRACE_GETREGS, child, 0, &regs) == -1)
@@ -121,22 +117,21 @@ int run_child(pid_t child) {
 
         // Disassemble the instruction at RIP adress
         count = cs_disasm(handle, code, MAX_INSN_BYTES, regs.rip, 1, &insn);
-        
-        // TODO Handle asm sorting 
+
         if (count > 0) {
-            handle_insn(&cmp, &jmp, &jmp_adress, insn, &regs);
-            printf("0x%lx:\t%s\t%s\n",
-                insn[0].address,
-                insn[0].mnemonic,
-                insn[0].op_str);
+            handle_insn(&cmp, &jmp, &jmp_adress, insn, &regs, output_file, &flag_setter_not_liked);
             cs_free(insn, count);
         } else {
-            fprintf(stderr, "0x%llx:\t<unable to disassemble>\n", regs.rip);
-            return 1;
+            undisassembled_lines++;
         }
 
-        // Exécuter l'instruction
+        // Execute 1 instruction
         stop = execute(1, child, &status);
+    }
+
+    if (verbose) {
+        printf("Number of undisassembled lines: %d\n", undisassembled_lines);
+        printf("Number of flag setters not linked: %d\n", flag_setter_not_liked);
     }
 
     cs_close(&handle);
@@ -144,12 +139,28 @@ int run_child(pid_t child) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        fprintf(stderr, "Usage: %s <executable> [args...]\n", argv[0]);
+    if (argc < 3) {
+        fprintf(stderr, "Usage: %s <executable> <output file> [args...]\n", argv[0]);
         return 1;
     }
 
+    FILE* output_file = fopen(argv[2], "w");
+    if (output_file == NULL) {
+        fprintf(stderr, "Error opening output file: %s\n", strerror(errno));
+        return 1;
+    }
+
+    bool verbose = false;
+
+    if (argc > 3) {
+        for (int i = 3; i < argc; i++) {
+            if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--verbose") == 0) {
+                verbose = true;
+            }
+        }
+    }
+
     pid_t child = give_birth(argv[1]);
-    run_child(child);
+    run_child(child, output_file, verbose);
 
 }

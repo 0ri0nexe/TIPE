@@ -5,6 +5,8 @@ LDFLAGS = -lcapstone
 SRC = ./src/main.c
 TARGET = ./bin/bench
 BIN_DIR = ./bin
+EXECUTABLE = /bin/ls
+OUTPUT_FILE = ./logs/trace.log
 
 # Règle par défaut
 all: $(TARGET)
