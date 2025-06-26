@@ -45,7 +45,7 @@ A line of the output file is formated this way :
 branch_adress jump_taken
 ```
 
-With jump adress  
+With branch adress beeing the adress of the flag setter instruction 
 
 ## Method
 
