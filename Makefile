@@ -27,4 +27,4 @@ clean:
 distclean: clean
 	rm -rf $(BIN_DIR)
 
-.PHONY: all clean distclean test
+.PHONY: all clean distclean

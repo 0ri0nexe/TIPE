@@ -36,13 +36,13 @@ Use the following command to use the executable (replace ./bin/bench with your o
 
 Here are the arguments you can put (only one for now) :
 
- - `-v` or `--verbose` : print the number of lines which couldn't be disassemble for some reason (if the executable you are auditing is printing something, it isn't gonna be disassemblable) and the number of flag setter that arren't followed by a jump : this is the number of times that the program ran on a flag setter instruction (cmp and test) and these conditions weren't followed by a jump instruction (jmp, je, jle, ...), in which case the flag setter is considered useless. 
+ - `-v` : print the number of lines which couldn't be disassemble for some reason (if the executable you are auditing is printing something, it isn't gonna be disassemblable) and the number of flag setter that arren't followed by a jump : this is the number of times that the program ran on a flag setter instruction (cmp and test) and these conditions weren't followed by a jump instruction (jmp, je, jle, ...), in which case the flag setter is considered useless. 
 
-## output file format
+## Output file format
 A line of the output file is formated this way :
 
 ```
-jump_adress jump_taken
+branch_adress jump_taken
 ```
 
 With jump adress  
