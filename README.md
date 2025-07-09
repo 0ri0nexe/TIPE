@@ -70,4 +70,4 @@ Handling the argument passing to the executable.
 
 --> 18/04/2025 : refactoring code (now beautiful)
 
---> 09/05/2025 : jump condition sucessfully detected and written into the output file. Error handling is pretty good, added a "verbose" argument.
+--> 09/05/2025 : jump condition sucessfully detected and written into the output file. Error handling is pretty good, added a "verbose" argument. 
