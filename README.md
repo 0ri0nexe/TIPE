@@ -37,6 +37,7 @@ Use the following command to use the executable (replace ./bin/bench with your o
 Here are the arguments you can put (only one for now) :
 
  - `-v` : print the number of lines which couldn't be disassemble for some reason (if the executable you are auditing is printing something, it isn't gonna be disassemblable) and the number of flag setter that arren't followed by a jump : this is the number of times that the program ran on a flag setter instruction (cmp and test) and these conditions weren't followed by a jump instruction (jmp, je, jle, ...), in which case the flag setter is considered useless. 
+ - `-a` : analyse the stdout and stderr. The default behavior is to avoid all stderr and stdout outputs, and there is very few reason to do it, most of the time, the output cannot be disassembled.
 
 ## Output file format
 A line of the output file is formated this way :
@@ -61,8 +62,7 @@ We have a list of adresses and instruction, then we need to detect conditional j
 - **capstone** : Used to disassemble the executable.
 
 ## TODO
-
-Handling the argument passing to the executable.
+Nothing for now :)
 
 ## Journal de bord :
 
@@ -71,3 +71,5 @@ Handling the argument passing to the executable.
 --> 18/04/2025 : refactoring code (now beautiful)
 
 --> 09/05/2025 : jump condition sucessfully detected and written into the output file. Error handling is pretty good, added a "verbose" argument. 
+
+--> 08/08/2025 : added a new parameter (-i) that avoid some disassembling problems and add flexibility.

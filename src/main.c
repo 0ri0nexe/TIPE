@@ -14,9 +14,8 @@ void error_exit(const char *msg) {
     perror(msg);
     exit(EXIT_FAILURE);
 }
-
-// fork child process avec support pour les arguments
-pid_t create_process(char* argv[]) {
+// Ajout d'un paramètre supplémentaire pour create_process
+pid_t create_process(char* argv[], bool analyze_output) {
     pid_t child = fork();
     if (child == -1) {
         error_exit("fork");
@@ -26,8 +25,31 @@ pid_t create_process(char* argv[]) {
         // Child process
         ptrace(PTRACE_TRACEME, 0, NULL, NULL);
         kill(getpid(), SIGSTOP); 
-        execvp(argv[0], argv);
-        error_exit("execvp");
+
+        if (analyze_output) {
+            // Construit la commande avec redirection
+            size_t cmd_len = 0;
+            for (int i = 0; argv[i] != NULL; i++) {
+                cmd_len += strlen(argv[i]) + 1;
+            }
+            cmd_len += strlen("> /dev/null 2>&1") + 1;
+
+            char* command = malloc(cmd_len);
+            if (!command) error_exit("malloc");
+
+            command[0] = '\0';
+            for (int i = 0; argv[i] != NULL; i++) {
+                strcat(command, argv[i]);
+                if (argv[i+1] != NULL) strcat(command, " ");
+            }
+            strcat(command, " > /dev/null 2>&1");
+
+            execl("/bin/sh", "sh", "-c", command, NULL);
+            error_exit("execl");
+        } else {
+            execvp(argv[0], argv);
+            error_exit("execvp");
+        }
     }
     return child;
 }
@@ -153,6 +175,7 @@ int main(int argc, char *argv[]) {
     }
 
     bool verbose = false;
+    bool analyze_output = false;
     int i = 3;
     int separator_index = -1;
 
@@ -163,8 +186,11 @@ int main(int argc, char *argv[]) {
             break;
         } else if (strcmp(argv[i], "-v") == 0) {
             verbose = true;
+        } else if (strcmp(argv[i], "-a") == 0) {
+            analyze_output = true;
         }
     }
+
 
     // Target executable arguments
     char** target_argv;
@@ -182,15 +208,15 @@ int main(int argc, char *argv[]) {
         for (i = 1; i < target_argc; i++) {
             target_argv[i] = argv[separator_index + i];
         }
-    } else {
+    } else {   
         // No additional arguments
         target_argc = 2;
         target_argv = (char**)malloc(target_argc * sizeof(char*));
         target_argv[0] = argv[1];
         target_argv[1] = NULL;
     }
+    pid_t child = create_process(target_argv, analyze_output);
 
-    pid_t child = create_process(target_argv);
     int result = run_child(child, output_file, verbose);
 
     free(target_argv);
