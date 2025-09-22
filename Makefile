@@ -1,6 +1,6 @@
 # Définition des variables
 CC = gcc
-CFLAGS = -Wall -Wextra
+CFLAGS = -Wall -Wextra -static
 LDFLAGS = -lcapstone
 SRC = ./src/main.c
 TARGET = ./bin/bench

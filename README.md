@@ -18,6 +18,8 @@ Place yourself in the root of the project and execute
 ```makefile
 make
 ```
+Please note that since the project is meant to be used in a sandbox environnement, the compilation command includes -static which means that the executable will include its dependencies directly in the executable. The counterpart is that the executable is larger than it needs to be, but for now it's still reasonable.
+
 ### With GCC
 
 In the root of the project, execute :
