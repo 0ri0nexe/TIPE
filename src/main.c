@@ -116,7 +116,6 @@ void handle_insn(bool* cmp, bool* jmp, uint64_t* jmp_adress, uint64_t* cmp_adres
         *jmp_adress = insn->detail->x86.operands[0].imm;
     } else if (*cmp && *jmp) {
         fprintf(output_file, "0x%lx\t%d\n", *cmp_adress, *jmp_adress == regs->rip);
-        printf("0x%lx\t%d\n", *cmp_adress, *jmp_adress == regs->rip);
         *jmp = false;
         *jmp_adress = false;
     } else if (cmp && !jmp) {
