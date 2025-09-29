@@ -17,20 +17,20 @@ char *resolve_path(const char *base, const char *path) {
     if (!resolved) return NULL;
 
     if (path[0] == '/') {
-        // Chemin absolu → on ignore base
+        // Absolute path
         if (realpath(path, resolved) == NULL) {
             free(resolved);
             return NULL;
         }
     } else {
-        // Chemin relatif → on joint base et path
+        // Relatve path
         snprintf(combined, sizeof(combined), "%s/%s", base, path);
         if (realpath(combined, resolved) == NULL) {
             free(resolved);
             return NULL;
         }
     }
-    return resolved; // L'appelant doit free()
+    return resolved; // Caller needs to free()
 }
 
 void error_exit(const char *msg) {
@@ -112,9 +112,11 @@ void handle_insn(bool* cmp, bool* jmp, uint64_t* jmp_adress, uint64_t* cmp_adres
         *cmp = true;
     } else if (strstr(insn[0].mnemonic, "j")) {
         *jmp = true;
-        *cmp_adress = regs->rip;
+        *cmp_adress=regs->rip;
+        *jmp_adress = insn->detail->x86.operands[0].imm;
     } else if (*cmp && *jmp) {
         fprintf(output_file, "0x%lx\t%d\n", *cmp_adress, *jmp_adress == regs->rip);
+        printf("0x%lx\t%d\n", *cmp_adress, *jmp_adress == regs->rip);
         *jmp = false;
         *jmp_adress = false;
     } else if (cmp && !jmp) {
@@ -143,6 +145,7 @@ int run_child(pid_t child, FILE* output_file, bool verbose) {
         fprintf(stderr, "Failed to initialize Capstone\n");
         return 1;
     }
+    cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON);
 
     // mainloop
     bool stop = false;
@@ -250,6 +253,7 @@ int main(int argc, char *argv[]) {
         char* cwd = getcwd(NULL, 0);
         char* final_path = resolve_path(cwd, argv[2]);
         printf("Program finished without error, trace generated in %s\n", final_path);
+        free(final_path);
     }
     
     return result;
