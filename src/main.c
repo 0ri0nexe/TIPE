@@ -5,15 +5,39 @@
 #include <sys/wait.h>
 #include <sys/user.h>   // For struct user_regs_struct
 #include <string.h>
+#include <limits.h>       //For PATH_MAX
 #include <errno.h>
 #include <capstone/capstone.h>
 
 #define MAX_INSN_BYTES 16  // Max size of instruction bytes to read
 
+char *resolve_path(const char *base, const char *path) {
+    char combined[PATH_MAX];
+    char *resolved = malloc(PATH_MAX);
+    if (!resolved) return NULL;
+
+    if (path[0] == '/') {
+        // Chemin absolu → on ignore base
+        if (realpath(path, resolved) == NULL) {
+            free(resolved);
+            return NULL;
+        }
+    } else {
+        // Chemin relatif → on joint base et path
+        snprintf(combined, sizeof(combined), "%s/%s", base, path);
+        if (realpath(combined, resolved) == NULL) {
+            free(resolved);
+            return NULL;
+        }
+    }
+    return resolved; // L'appelant doit free()
+}
+
 void error_exit(const char *msg) {
     perror(msg);
     exit(EXIT_FAILURE);
 }
+
 // Ajout d'un paramètre supplémentaire pour create_process
 pid_t create_process(char* argv[], bool analyze_output) {
     pid_t child = fork();
@@ -26,7 +50,7 @@ pid_t create_process(char* argv[], bool analyze_output) {
         ptrace(PTRACE_TRACEME, 0, NULL, NULL);
         kill(getpid(), SIGSTOP); 
 
-        if (analyze_output) {
+        if (!analyze_output) {
             // Construit la commande avec redirection
             size_t cmd_len = 0;
             for (int i = 0; argv[i] != NULL; i++) {
@@ -221,6 +245,13 @@ int main(int argc, char *argv[]) {
 
     free(target_argv);
     fclose(output_file);
+
+    if (verbose) {
+        char* cwd = getcwd(NULL, 0);
+        char* final_path = resolve_path(cwd, argv[2]);
+        printf("Program finished without error, trace generated in %s\n", final_path);
+    }
     
     return result;
 }
+
