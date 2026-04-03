@@ -74,4 +74,4 @@ Nothing for now :)
 
 --> 09/05/2025 : jump condition sucessfully detected and written into the output file. Error handling is pretty good, added a "verbose" argument. 
 
---> 08/08/2025 : added a new parameter (-i) that avoid some disassembling problems and add flexibility.
+--> 08/08/2025 : added a new parameter (-a) that avoid some disassembling problems and add flexibility.
